@@ -1,4 +1,4 @@
-CC = gcc abb.c abb.h abb_minipruebas.c -o
+CC = gcc abb.c abb.h abb_pruebas.c -o
 CFLAGS = -g -std=c99 -Wall -Wconversion -Wtype-limits -pedantic -Werror -O0
 VALGRIND = valgrind --leak-check=full --track-origins=yes --show-reachable=yes
 EXECUTABLE = pruebas

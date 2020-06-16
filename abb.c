@@ -31,20 +31,25 @@ typedef struct almazenador {
  *****************/
 
 /*
+ * PRE:
+ * POST:  
  */
 nodo_abb_t** busqueda_ptr(nodo_abb_t** nodo_abb, abb_comparador comparador,void* elemento, char tipo_busqueda){
     
     if ( !(*nodo_abb) ) return nodo_abb;
     
     int comparacion = comparador((*nodo_abb)->elemento, elemento); 
-    bool comdicion = (comparacion == IGUALES) && (tipo_busqueda != INSERTAR);
-    if (comdicion) return nodo_abb;    
+
+    if ((comparacion == IGUALES) && (tipo_busqueda != INSERTAR)) return nodo_abb;    
     
     return (comparacion == MENOR )? busqueda_ptr(&((*nodo_abb)->izquierda), comparador,elemento,tipo_busqueda):
         busqueda_ptr(&((*nodo_abb)->derecha),comparador,elemento,tipo_busqueda);
 }
 
-/*
+/* Crea un nodo guardando un elemento en el.
+ * PRE: --------
+ * POST:Devuelve un nodo_abb_t* si se pudo crear correctamente
+ * de lo contrario devuelve NULL
  */
 nodo_abb_t* nodo_abb_crear(void* elemento){
     nodo_abb_t* nodo_abb = malloc(sizeof(nodo_abb_t));
@@ -58,6 +63,10 @@ nodo_abb_t* nodo_abb_crear(void* elemento){
     return nodo_abb;
 }
 /*
+ *Almazena el elemento dado y lo guarda en el contenedor recivido.
+ *PRE: Los paramentro recividos tiene que ser diferentes a NULL.
+ *POST: Devuelve true si cantidad_elementos del contenedor en igual
+ *a su tamanio_elementos de lo contrario false.
  */
 bool guardar_elemento(void* elemento, void* contenedor){
 
@@ -71,28 +80,48 @@ bool guardar_elemento(void* elemento, void* contenedor){
 }
 
 /*
+ * Recorre el arbol Segun el tipo de recorrido: ABB_RECORRER_PREORDEN(0), ABB_RECORRER_INORDEN(1) 
+ * y ABB_RECORRER_POSTORDEN(2). Ejecuta una funcion dada.
+ * PRE: ----- .
+ * POST: ---- .
  */
 void recorrido_abb(nodo_abb_t* raiz,int recorrido, bool (*funcion)(void*, void*), void* extra, bool* termino){
+    
     if(!raiz || *termino) return;
     
-    if(recorrido == ABB_RECORRER_PREORDEN && !(*termino)) *termino = funcion(raiz->elemento, extra);
+    if(recorrido == ABB_RECORRER_PREORDEN) *termino = funcion(raiz->elemento, extra);
     recorrido_abb(raiz->derecha, recorrido, funcion, extra, termino);
     
-    if(recorrido == ABB_RECORRER_INORDEN && !(*termino)) *termino = funcion(raiz->elemento, extra);
+    if(recorrido == ABB_RECORRER_INORDEN) *termino = funcion(raiz->elemento, extra);
     recorrido_abb(raiz->izquierda, recorrido, funcion, extra, termino);
     
-    if(recorrido == ABB_RECORRER_POSTORDEN && !(*termino))  *termino = funcion(raiz->elemento, extra);
+    if(recorrido == ABB_RECORRER_POSTORDEN)  *termino = funcion(raiz->elemento, extra);
 }
 
 /*
+ * Instancia al almazenador con los recividos. 
+ * PRE: ------.
+ * POST: -----. 
+ */
+void iniciar_almazenador(almazenador_t* almazenador ,void** array, int tamanio_array){
+    almazenador->tamanio_elementos = tamanio_array;
+    almazenador->elementos = array;
+    almazenador->cantidad_elementos = CANTIDAD_INICIAL;
+    almazenador->termino = false;
+}
+
+/*
+ * Recorre el arbol y guarda los elementos del arbol en el array recivido. 
+ * Segun el tipo de recorrido recivido va a estar guardo de esa manera.
+ * PRE: arbol diferente a NULL; 
+ * POST: Devuelve la cantidad de elementos del array que pudo llenar (si el
+ * espacio en el array no alcanza para almacenar todos los elementos,
+ * llena hasta donde puede y devuelve la cantidad de elementos que
+ * pudo poner) 
  */
 int almazenage_de_elementos(abb_t* arbol, void** array,int tamanio_array,int recorrido){
-    
     almazenador_t almazenador;
-    almazenador.tamanio_elementos = tamanio_array;
-    almazenador.elementos = array;
-    almazenador.cantidad_elementos = CANTIDAD_INICIAL;
-    almazenador.termino = false;
+    iniciar_almazenador(&almazenador,array,tamanio_array);
 
     if(arbol_vacio(arbol)) return almazenador.cantidad_elementos; 
     
@@ -100,35 +129,48 @@ int almazenage_de_elementos(abb_t* arbol, void** array,int tamanio_array,int rec
     
     return almazenador.cantidad_elementos;
 }
-/*
+/* Borro el nodo que no tiene hijo.
+ * PRE: -----.
+ * POST: -----.
  */
-void hoja_destruir(nodo_abb_t** hoja,abb_liberar_elemento destructor){
+void borrar_sin_hijos(nodo_abb_t** hoja,abb_liberar_elemento destructor){
+    
     if(destructor) destructor((*hoja)->elemento);
+    
     free(*hoja);
     *hoja = NULL;
 }
 /*
+ * Recorre en arbol en forma PREORDEN y borrar todas las hojas(nodo sin hijos).
+ * PRE: -----.
+ * POST: -----.
  */
 void hojas_destruir(nodo_abb_t** raiz, abb_liberar_elemento destructor){
+    
     if(!(*raiz)) return;
     
     hojas_destruir(&((*raiz)->izquierda),destructor);
 
     hojas_destruir(&((*raiz)->derecha),destructor);
 
-    hoja_destruir(raiz,destructor);
+    borrar_sin_hijos(raiz,destructor);
 
 }
 
-/*
- *post: devolvio el mayor de sus menores del nodo pasado por parametro.
+/* 
+ * PRE: ---;
+ * POST: Devolvio el mayor de sus menores del nodo pasado por parametro.
  */
 nodo_abb_t** obtener_mayor_de_menores(nodo_abb_t** hijo){
     
     return (!((*hijo)->izquierda))? hijo:obtener_mayor_de_menores(&(*hijo)->izquierda);
 }
 
-
+/*
+ * Intercambian los elemento de cada nodo_abb_t.
+ * PRE: ------.
+ * POST: ------.
+ */
 void swap(nodo_abb_t* elemento1, nodo_abb_t* elemento2){ 
     void* elemento_aux = elemento1->elemento;
     elemento1->elemento = elemento2->elemento;
@@ -136,33 +178,48 @@ void swap(nodo_abb_t* elemento1, nodo_abb_t* elemento2){
 }
 
 /*
+ * PRE: Nodo_abb_t* diferente a NULL.
+ * POST: Devolvio la cant_hijos que tiene el nodo.  
  */
-int catidad_hijos(nodo_abb_t* raiz){
+int catidad_hijos(nodo_abb_t* nodo){
     int cant_hijos = SIN_HIJOS;
-    if(raiz->izquierda == raiz->derecha) return cant_hijos;
-    cant_hijos += (raiz->izquierda && raiz->derecha)? DOS_HIJOS:UN_HIJO;
+    
+    if(nodo->izquierda == nodo->derecha) return cant_hijos;
+    
+    cant_hijos += (nodo->izquierda && nodo->derecha)? DOS_HIJOS:UN_HIJO;
         
     return cant_hijos;
 }
 
 /*
+ * Borra nodo que tiene un hijo.
+ * PRE: nodo_abb_t** diferente a NULL.
+ * POST: ------. 
  */ 
 void borrar_un_hijo(nodo_abb_t** nodo,abb_liberar_elemento destructor){
     nodo_abb_t* hijo = ((*nodo)->derecha)?(*nodo)->derecha:(*nodo)->izquierda;
-    hoja_destruir(nodo,destructor);
+    borrar_sin_hijos(nodo,destructor);
     *nodo = hijo;
 }
-
+/*
+ * Borra nodo que tiene dos hijos.
+ * PRE: nodo_abb_t** diferente a NULL.
+ * POST: ------.
+ */
 void borrar_dos_hijos(nodo_abb_t** nodo_a_borrar, abb_liberar_elemento destructor){
     nodo_abb_t** nodo_swap = obtener_mayor_de_menores( &(*nodo_a_borrar)->derecha);
     
     swap(*nodo_swap,*nodo_a_borrar);
     
     (catidad_hijos(*nodo_swap) == UN_HIJO)? borrar_un_hijo(nodo_swap, destructor)
-    :hoja_destruir(nodo_swap, destructor); 
+    :borrar_sin_hijos(nodo_swap, destructor); 
 }
 
 /*
+ * Borra Segun cuantos hijos tengan el nodo. La cantidad de hijos recivido 
+ * por parametro.
+ * PRE: nodo_abb_t** diferente a NULL.
+ * POST: ------.
  */
 void borrar_con_hijos(nodo_abb_t** nodo_a_borrar,abb_liberar_elemento destructor,int cant_hijos){
     
@@ -189,6 +246,7 @@ abb_t* arbol_crear(abb_comparador comparador, abb_liberar_elemento destructor){
 }
 
 int arbol_insertar(abb_t *arbol, void *elemento){
+    
     if(!arbol) return ERROR;
 
     nodo_abb_t** nodo = busqueda_ptr(&(arbol->nodo_raiz),arbol->comparador, elemento, INSERTAR);
@@ -205,7 +263,7 @@ int arbol_borrar(abb_t *arbol, void *elemento){
    
     int cant_hijos = catidad_hijos(*nodo_borrar);
 
-    (cant_hijos == SIN_HIJOS)? hoja_destruir(nodo_borrar, arbol->destructor)
+    (cant_hijos == SIN_HIJOS)? borrar_sin_hijos(nodo_borrar, arbol->destructor)
     :borrar_con_hijos(nodo_borrar, arbol->destructor, cant_hijos);  
     
     return EXITO;
@@ -214,6 +272,7 @@ int arbol_borrar(abb_t *arbol, void *elemento){
 
 
 void* arbol_buscar(abb_t *arbol, void *elemento){
+    
     if(arbol_vacio(arbol)) return NULL;
     
     nodo_abb_t* nodo = *(busqueda_ptr(&(arbol->nodo_raiz),arbol->comparador,elemento,BUSCAR));
@@ -222,13 +281,13 @@ void* arbol_buscar(abb_t *arbol, void *elemento){
 }
 
 void* arbol_raiz(abb_t *arbol){
-   
+
     return (arbol_vacio(arbol))? NULL:arbol->nodo_raiz->elemento;
 }
 
 bool arbol_vacio(abb_t *arbol){
-    bool condicion = (!arbol && !(arbol->nodo_raiz));
-    return condicion;
+
+    return (arbol)? !(arbol->nodo_raiz):false;
 }
 
 int arbol_recorrido_inorden(abb_t *arbol, void **array, int tamanio_array){
@@ -256,6 +315,6 @@ void arbol_destruir(abb_t *arbol){
 void abb_con_cada_elemento(abb_t *arbol, int recorrido, bool (*funcion)(void *, void *), void *extra){
     if(arbol_vacio(arbol) || !funcion) return;
     
-    bool terminar = false;
-    recorrido_abb(arbol->nodo_raiz, recorrido, funcion, extra, &terminar);
+    bool condicion = false;
+    recorrido_abb(arbol->nodo_raiz, recorrido, funcion, extra, &condicion);
 }
