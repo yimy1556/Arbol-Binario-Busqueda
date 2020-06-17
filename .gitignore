@@ -2,5 +2,6 @@
 pruebas
 vgcore.*
 abb_minipruebas.c
+*.txt
 *.pdf
 *.zip

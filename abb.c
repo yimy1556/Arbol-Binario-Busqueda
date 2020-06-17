@@ -42,7 +42,7 @@ nodo_abb_t** busqueda_ptr(nodo_abb_t** nodo_abb, abb_comparador comparador,void*
 
     if ((comparacion == IGUALES) && (tipo_busqueda != INSERTAR)) return nodo_abb;    
     
-    return (comparacion == MENOR )? busqueda_ptr(&((*nodo_abb)->izquierda), comparador,elemento,tipo_busqueda):
+    return (comparacion == MAYOR )? busqueda_ptr(&((*nodo_abb)->izquierda), comparador,elemento,tipo_busqueda):
         busqueda_ptr(&((*nodo_abb)->derecha),comparador,elemento,tipo_busqueda);
 }
 
@@ -89,13 +89,18 @@ void recorrido_abb(nodo_abb_t* raiz,int recorrido, bool (*funcion)(void*, void*)
     
     if(!raiz || *termino) return;
     
-    if(recorrido == ABB_RECORRER_PREORDEN) *termino = funcion(raiz->elemento, extra);
-    recorrido_abb(raiz->derecha, recorrido, funcion, extra, termino);
+    if(recorrido == ABB_RECORRER_PREORDEN && !(*termino))
+        *termino = funcion(raiz->elemento, extra);
     
-    if(recorrido == ABB_RECORRER_INORDEN) *termino = funcion(raiz->elemento, extra);
     recorrido_abb(raiz->izquierda, recorrido, funcion, extra, termino);
     
-    if(recorrido == ABB_RECORRER_POSTORDEN)  *termino = funcion(raiz->elemento, extra);
+    if(recorrido == ABB_RECORRER_INORDEN && !(*termino)) 
+        *termino = funcion(raiz->elemento, extra);
+   
+    recorrido_abb(raiz->derecha, recorrido, funcion, extra, termino);
+    
+    if(recorrido == ABB_RECORRER_POSTORDEN && !(*termino))  
+        *termino = funcion(raiz->elemento, extra);
 }
 
 /*
@@ -123,7 +128,8 @@ int almazenage_de_elementos(abb_t* arbol, void** array,int tamanio_array,int rec
     almazenador_t almazenador;
     iniciar_almazenador(&almazenador,array,tamanio_array);
 
-    if(arbol_vacio(arbol)) return almazenador.cantidad_elementos; 
+    if(arbol_vacio(arbol) || tamanio_array == CANTIDAD_INICIAL) 
+        return almazenador.cantidad_elementos; 
     
     recorrido_abb(arbol->nodo_raiz,recorrido,guardar_elemento,&almazenador,&(almazenador.termino));
     
@@ -287,16 +293,16 @@ void* arbol_raiz(abb_t *arbol){
 
 bool arbol_vacio(abb_t *arbol){
 
-    return (arbol)? !(arbol->nodo_raiz):false;
+    return (arbol)? !(arbol->nodo_raiz):true;
 }
 
 int arbol_recorrido_inorden(abb_t *arbol, void **array, int tamanio_array){
-       
+    
     return almazenage_de_elementos(arbol, array, tamanio_array, ABB_RECORRER_INORDEN);
 }
 
 int arbol_recorrido_preorden(abb_t *arbol, void **array, int tamanio_array){
-    
+
     return almazenage_de_elementos(arbol, array, tamanio_array, ABB_RECORRER_PREORDEN); 
 }
 
